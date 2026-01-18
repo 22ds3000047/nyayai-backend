@@ -4,12 +4,15 @@ from supabase import create_client
 import openai
 import os
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables from .env
 load_dotenv()
 
 # Initialize OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+
 
 # Initialize Supabase client
 supabase = create_client(
@@ -19,6 +22,14 @@ supabase = create_client(
 
 # Create FastAPI app
 app = FastAPI(title="NyayAI Backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all for hackathon/demo
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ----------- Request Schema -----------
 
