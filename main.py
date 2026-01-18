@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel
 from supabase import create_client
 import openai
@@ -6,13 +6,11 @@ import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 
-# Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
 # Initialize OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-
 
 # Initialize Supabase client
 supabase = create_client(
@@ -23,6 +21,7 @@ supabase = create_client(
 # Create FastAPI app
 app = FastAPI(title="NyayAI Backend")
 
+# ✅ CORS middleware (MUST be right after app creation)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # allow all for hackathon/demo
@@ -40,9 +39,6 @@ class AskRequest(BaseModel):
 # ----------- Helper Functions -----------
 
 def embed_text(text: str):
-    """
-    Generate embedding for a given text using OpenAI
-    """
     response = openai.embeddings.create(
         model="text-embedding-3-small",
         input=text
@@ -51,9 +47,6 @@ def embed_text(text: str):
 
 
 def retrieve_legal_context(question: str, limit: int = 3):
-    """
-    Retrieve most relevant legal chunks from Supabase using pgvector
-    """
     question_embedding = embed_text(question)
 
     result = supabase.rpc(
@@ -68,9 +61,6 @@ def retrieve_legal_context(question: str, limit: int = 3):
 
 
 def generate_answer(question: str, context: list, language: str):
-    """
-    Generate a safe, structured legal information answer
-    """
     if not context:
         return (
             "Answer:\n"
@@ -122,6 +112,12 @@ This is legal information, not legal advice. Please consult a licensed advocate.
     )
 
     return response.choices[0].message.content.strip()
+
+# ----------- CORS PREFLIGHT HANDLER (CRITICAL FIX) -----------
+
+@app.options("/ask")
+def options_ask():
+    return Response(status_code=200)
 
 # ----------- API Endpoint -----------
 
